@@ -1,0 +1,6 @@
+[Unit]
+Description=Actualiza las agujas del icono bookos-clock
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/bookos-clock-update.sh

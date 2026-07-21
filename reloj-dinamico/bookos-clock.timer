@@ -1,0 +1,10 @@
+[Unit]
+Description=Icono bookos-clock dinamico (cada minuto)
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=5s
+Persistent=false
+
+[Install]
+WantedBy=timers.target

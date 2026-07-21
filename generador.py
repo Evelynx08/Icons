@@ -33,7 +33,10 @@ BOOKOS_EXTRA = {
     "bookos-viewer":        f"{_BOOKOS_REPOS}/BookOS-Viewer/src-tauri/icons/icon.svg",
     "bookos-voicerecorder": f"{_BOOKOS_REPOS}/BookOS-VoiceRecorder/src-tauri/icons/icon.svg",
     "bookos-shell":         f"{_BOOKOS_REPOS}/bookos-shell/src-tauri/icons/icon.svg",
+    "bookos-new":           f"{_BOOKOS_REPOS}/BookOS-New/src-tauri/icons/icon.svg",
 }
+# Diseños propios del pack: tienen prioridad sobre hicolor y BOOKOS_EXTRA.
+BOOKOS_LOCAL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "bookos-src")
 FACTOR_OCUPACION = 0.78          # tamaño del logo dentro de la base (0-1)
 LIENZO = 512                     # tamaño del lienzo de la base
 RADIO = 80                       # radio de las esquinas
@@ -164,6 +167,17 @@ def generar_variante(clave: str) -> None:
     for nombre_icono, ruta in BOOKOS_EXTRA.items():
         if f"{nombre_icono}.svg" not in fuentes and os.path.isfile(ruta):
             fuentes[f"{nombre_icono}.svg"] = ruta
+    if os.path.isdir(BOOKOS_LOCAL):
+        for archivo in sorted(os.listdir(BOOKOS_LOCAL)):
+            if archivo.endswith(".svg"):
+                fuentes[archivo] = os.path.join(BOOKOS_LOCAL, archivo)
+    # Glifos específicos de la variante (bookos-src/light | bookos-src/dark):
+    # mismo arte con colores ajustados a la base clara u oscura del pack.
+    sub_variante = os.path.join(BOOKOS_LOCAL, "dark" if "dark" in clave else "light")
+    if os.path.isdir(sub_variante):
+        for archivo in sorted(os.listdir(sub_variante)):
+            if archivo.endswith(".svg"):
+                fuentes[archivo] = os.path.join(sub_variante, archivo)
 
     bookos = 0
     if True:
