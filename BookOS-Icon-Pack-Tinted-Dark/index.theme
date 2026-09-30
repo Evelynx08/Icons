@@ -3,7 +3,7 @@ Name=BookOS-Tinted-Dark
 Comment=Base oscura para iconos tintados de BookOS
 DisplayDepth=32
 
-Inherits=Papirus,breeze,hicolor
+Inherits=Papirus-Dark,breeze-dark,hicolor
 Directories=apps/scalable,places/scalable,status/scalable
 
 [apps/scalable]

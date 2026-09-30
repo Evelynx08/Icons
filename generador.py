@@ -66,7 +66,7 @@ Name={name}
 Comment={comment}
 DisplayDepth=32
 
-Inherits=Papirus,breeze,hicolor
+Inherits={hereda}
 Directories=apps/scalable,places/scalable,status/scalable
 
 [apps/scalable]
@@ -104,17 +104,17 @@ def generar_variante(clave: str) -> None:
     carpeta, bg_color, nombre, comentario = VARIANTES[clave]
     out_dir = os.path.join(carpeta, "apps", "scalable")
 
-    if not os.path.exists(PAPIRUS_ORIGEN):
-        print(f"❌ No encuentro Papirus en '{PAPIRUS_ORIGEN}'. Instálalo (pacman -S papirus-icon-theme).")
-        return
-
     os.makedirs(out_dir, exist_ok=True)
     os.makedirs(os.path.join(carpeta, "places", "scalable"), exist_ok=True)
     os.makedirs(os.path.join(carpeta, "status", "scalable"), exist_ok=True)
 
     # index.theme + base-app.svg (modificables después)
     with open(os.path.join(carpeta, "index.theme"), "w", encoding="utf-8") as f:
-        f.write(INDEX_THEME.format(name=nombre, comment=comentario))
+        # Lo que el pack no tiene lo buscan GTK y Qt en estos. Los oscuros
+        # heredan las variantes -Dark: los iconos monocromos de breeze llevan
+        # el trazo casi negro dentro del SVG y sobre la base oscura no se ven.
+        hereda = "Papirus-Dark,breeze-dark,hicolor" if "dark" in clave else "Papirus,breeze,hicolor"
+        f.write(INDEX_THEME.format(name=nombre, comment=comentario, hereda=hereda))
     with open(os.path.join(carpeta, "base-app.svg"), "w", encoding="utf-8") as f:
         f.write(base_svg(bg_color))
 
@@ -123,7 +123,13 @@ def generar_variante(clave: str) -> None:
     parte_inferior = "\n</svg>"
     w_base = float(LIENZO)
 
-    archivos = [f for f in os.listdir(PAPIRUS_ORIGEN) if f.endswith(".svg")]
+    # Sin Papirus se regeneran solo las apps de BookOS: los iconos de Papirus
+    # ya generados están en el repo y no cambian.
+    if os.path.isdir(PAPIRUS_ORIGEN):
+        archivos = [f for f in os.listdir(PAPIRUS_ORIGEN) if f.endswith(".svg")]
+    else:
+        print(f"⚠ No encuentro Papirus en '{PAPIRUS_ORIGEN}'; solo regenero las apps de BookOS.")
+        archivos = []
     print(f"🚀 [{nombre}] Procesando {len(archivos)} iconos de Papirus (fondo {bg_color})…")
 
     contador = 0
@@ -189,8 +195,18 @@ def generar_variante(clave: str) -> None:
                 if not match_svg:
                     continue
                 interno = match_svg.group(1)
-                # Quitar SU rect de fondo (la base la pone el pack).
-                interno = re.sub(r'<rect[^>]*/>', '', interno, count=1)
+                # Quitar SU rect de fondo. En Dark/Light se conserva como base:
+                # los diseños de BookOS son glifo blanco sobre color de marca, y
+                # sobre la base neutra Reproductor y Grabadora quedaban como las
+                # mismas barras blancas, invisibles además en el tema claro.
+                # Las Tinted sí usan la base del pack porque el tintado recolorea
+                # el logo y reemplaza ese color de fondo.
+                fondo = re.search(r'<rect[^>]*/>', interno)
+                interno = interno[:fondo.start()] + interno[fondo.end():] if fondo else interno
+                superior = parte_superior
+                if fondo and not clave.startswith("tinted"):
+                    superior = (base[: base.index("<rect")] + fondo.group(0) + "\n"
+                                + FILTRO_SOMBRA)
                 match_vb = re.search(
                     r'viewBox=[\'"]\s*0\s+0\s+(\d+(?:\.\d+)?)\s+(\d+(?:\.\d+)?)\s*[\'"]',
                     contenido_origen, re.IGNORECASE)
@@ -201,7 +217,7 @@ def generar_variante(clave: str) -> None:
                     f'filter="url(#logoShadow)" opacity="0.95">\n{interno}\n    </g>'
                 )
                 with open(os.path.join(out_dir, archivo), "w", encoding="utf-8") as f:
-                    f.write(parte_superior + nodo + parte_inferior)
+                    f.write(superior + nodo + parte_inferior)
                 bookos += 1
             except Exception:
                 continue
